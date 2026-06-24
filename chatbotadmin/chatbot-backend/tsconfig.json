@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                          /* Phiên bản ECMAScript đầu ra */
+    "module": "commonjs",                        /* Hệ thống module phù hợp với Node.js */
+    "lib": ["es2022"],                           /* Thư viện core hỗ trợ */
+    "allowJs": true,                             /* Cho phép chạy xen kẽ file .js cũ nếu cần */
+    "outDir": "./dist",                          /* Thư mục chứa code sau khi biên dịch để deploy */
+    "rootDir": "./src",                          /* Thư mục gốc chứa mã nguồn tệp .ts của bạn */
+    "strict": true,                              /* Bật kiểm tra kiểu dữ liệu nghiêm ngặt */
+    "noImplicitAny": true,                       /* Bắt buộc khai báo kiểu rõ ràng, không để any ẩn */
+    "esModuleInterop": true,                     /* Hỗ trợ import các module CommonJS cũ */
+    "skipLibCheck": true,                        /* Bỏ qua kiểm tra lỗi trong node_modules */
+    "forceConsistentCasingInFileNames": true     /* Kiểm tra đồng nhất chữ hoa chữ thường tên file */
+  },
+  "include": ["src/**/*"]                        /* Chỉ quét và biên dịch các file nằm trong thư mục src */
+}
