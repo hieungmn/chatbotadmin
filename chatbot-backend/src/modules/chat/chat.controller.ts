@@ -163,15 +163,12 @@ export const handleChatQuery = async (req: Request, res: Response): Promise<any>
          */
         // 🎯 ĐÃ SỬA: Truyền đủ 3 đối số: cleanMsg, contextText, và contactUrl
         const aiAnswer = await generateAnswer(cleanMsg, contextText, contactUrl);
-
-        // Kiểm tra xem câu trả lời của AI có phải là chuỗi link fallback hay không
         const isFallback = (aiAnswer === contactUrl);
 
         return res.json({
             success: true,
             answer: aiAnswer,
-            // Nếu AI không biết và trả về link fallback, ta ép ID tạm thời là -1 để frontend hiển thị nút Feedback
-            faq_id: isFallback ? -1 : 999, 
+            faq_id: isFallback ? -1 : 999, // Đánh dấu -1 nếu thất bại, 999 nếu AI trả lời từ RAG thành công
             is_fallback: isFallback,
             session_id: finalSessionId,
             source: "ai"
