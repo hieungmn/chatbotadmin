@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id            Int             @id @default(autoincrement()) @map("id")
+  username      String          @unique @db.VarChar(50)
+  password_hash String          @map("password_hash") @db.VarChar(255)
+  full_name     String?         @map("full_name") @db.VarChar(100)
+  role          String          @default("staff") @db.VarChar(50)
+  is_active     Boolean         @default(true) @map("is_active")
+  created_at    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  audit_logs    AdminAuditLog[]
+
+  @@map("admin_users")
+}
+
+model AdminAuditLog {
+  id          BigInt     @id @default(autoincrement()) @map("id")
+  admin_id    Int?       @map("admin_id")
+  action_type String     @map("action_type") @db.VarChar(50)
+  details     String?
+  ip_address  String?    @map("ip_address") @db.VarChar(45)
+  created_at  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  admin       AdminUser? @relation(fields: [admin_id], references: [id], onUpdate: NoAction)
+
+  @@map("admin_audit_logs")
+}
+
+model Site {
+  site_id       String           @id @db.VarChar(50)
+  site_name     String           @map("site_name") @db.VarChar(100)
+  contact_url   String           @map("contact_url")
+  is_active     Boolean          @default(true) @map("is_active")
+  created_at    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at    DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+  chat_sessions ChatSession[]
+  feedback_logs FaqFeedbackLog[]
+  faqs          FaqMaster[]
+  search_logs   SearchLog[]
+  users         User[]
+
+  @@map("sites")
+}
+
+model User {
+  id            Int             @id @default(autoincrement()) @map("id")
+  username      String          @unique @db.VarChar(50)
+  password_hash String          @map("password_hash") @db.VarChar(255)
+  site_id       String?         @db.VarChar(50)
+  full_name     String?         @map("full_name") @db.VarChar(100)
+  is_active     Boolean         @default(true) @map("is_active")
+  created_at    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  action_logs   UserActionLog[]
+  sites         Site?           @relation(fields: [site_id], references: [site_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([site_id], map: "idx_users_site")
+  @@map("users")
+}
+
+model UserSitePermission {
+  user_id    Int      @map("user_id")
+  site_id    String   @map("site_id") @db.VarChar(50)
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  granted_by Int?     @map("granted_by")
+
+  @@id([user_id, site_id])
+  @@map("user_site_permissions")
+}
+
+model UserActionLog {
+  id          BigInt   @id @default(autoincrement()) @map("id")
+  user_id     Int      @map("user_id")
+  action_type String   @map("action_type") @db.VarChar(50)
+  details     String?
+  created_at  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_user_action_logs_user")
+  @@map("user_action_logs")
+}
+
+model SiteKnowledgeFile {
+  id          Int      @id @default(autoincrement()) @map("id")
+  site_id     String   @map("site_id") @db.VarChar(50)
+  uploaded_by Int?     @map("uploaded_by")
+  file_name   String   @map("file_name") @db.VarChar(255)
+  file_type   String   @map("file_type") @db.VarChar(50)
+  file_path   String   @map("file_path")
+  status      String   @default("pending") @db.VarChar(20)
+  created_at  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("site_knowledge_files")
+}
+
+model FaqMaster {
+  id           Int              @id @default(autoincrement()) @map("id")
+  data_id      String           @map("data_id") @db.VarChar(50)
+  site_id      String           @map("site_id") @db.VarChar(50)
+  category     String           @default("Chung") @db.VarChar(100)
+  keywords     String           @default("")
+  answer_text  String           @map("answer_text")
+  redirect_url String?          @map("redirect_url")
+  is_draft     Boolean          @default(true) @map("is_draft")
+  created_at   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at   DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+  feedbacks    FaqFeedbackLog[]
+  site         Site             @relation(fields: [site_id], references: [site_id], onDelete: Cascade, onUpdate: NoAction)
+  search_logs  SearchLog[]
+
+  @@unique([site_id, data_id], name: "uq_faq_site_data", map: "uq_faq_site_data")
+  @@index([keywords(ops: raw("gin_trgm_ops"))], map: "idx_faq_keywords_trgm", type: Gin)
+  @@index([site_id, is_draft], map: "idx_faq_publish")
+  @@index([site_id], map: "idx_faq_site")
+  @@map("faq_master")
+}
+
+model SiteKnowledgeChunk {
+  id           BigInt                 @id @default(autoincrement()) @map("id")
+  file_id      Int?                   @map("file_id")
+  site_id      String?                @map("site_id") @db.VarChar(50)
+  content_text String                 @map("content_text")
+  embedding    Unsupported("vector")?
+  created_at   DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("site_knowledge_chunks")
+}
+
+model ChatSession {
+  session_id     String           @id @db.VarChar(100)
+  site_id        String           @map("site_id") @db.VarChar(50)
+  ip_address     String?          @map("ip_address") @db.VarChar(45)
+  user_agent     String?          @map("user_agent")
+  created_at     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  last_active_at DateTime         @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  site           Site             @relation(fields: [site_id], references: [site_id], onDelete: Cascade, onUpdate: NoAction)
+  feedbacks      FaqFeedbackLog[]
+  search_logs    SearchLog[]
+
+  @@index([site_id], map: "idx_chat_sessions_site")
+  @@map("chat_sessions")
+}
+
+model SearchLog {
+  id              BigInt           @id @default(autoincrement()) @map("id")
+  session_id      String           @map("session_id") @db.VarChar(100)
+  site_id         String           @map("site_id") @db.VarChar(50)
+  query_text      String           @map("query_text")
+  is_missed       Boolean          @default(false) @map("is_missed")
+  matched_faq_id  Int?             @map("matched_faq_id")
+  searched_at     DateTime         @default(now()) @map("searched_at") @db.Timestamptz(6)
+  response_source String?          @default("faq") @map("response_source") @db.VarChar(20)
+  ai_response     String?          @map("ai_response")
+  feedbacks       FaqFeedbackLog[]
+  faq             FaqMaster?       @relation(fields: [matched_faq_id], references: [id], onUpdate: NoAction)
+  session         ChatSession      @relation(fields: [session_id], references: [session_id], onDelete: Cascade, onUpdate: NoAction)
+  site            Site             @relation(fields: [site_id], references: [site_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([matched_faq_id], map: "idx_search_logs_faq")
+  @@index([session_id], map: "idx_search_logs_session")
+  @@index([site_id, is_missed], map: "idx_search_logs_site_missed")
+  @@index([searched_at(sort: Desc)], map: "idx_search_logs_time")
+  @@map("search_logs")
+}
+
+model FaqFeedbackLog {
+  id            BigInt       @id @default(autoincrement()) @map("id")
+  site_id       String       @map("site_id") @db.VarChar(50)
+  session_id    String?      @map("session_id") @db.VarChar(100)
+  faq_id        Int          @map("faq_id")
+  search_log_id BigInt?      @map("search_log_id")
+  score         Int          @db.SmallInt
+  created_at    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  faq           FaqMaster    @relation(fields: [faq_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  search_log    SearchLog?   @relation(fields: [search_log_id], references: [id], onUpdate: NoAction)
+  session       ChatSession? @relation(fields: [session_id], references: [session_id], onDelete: Cascade, onUpdate: NoAction)
+  site          Site         @relation(fields: [site_id], references: [site_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([faq_id], map: "idx_feedback_faq")
+  @@index([score], map: "idx_feedback_score")
+  @@index([site_id], map: "idx_feedback_site")
+  @@map("faq_feedback_logs")
+}

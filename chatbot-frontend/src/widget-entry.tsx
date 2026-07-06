@@ -1,37 +1,53 @@
+// 1. Vá lỗi "process is not defined" ngay dòng đầu tiên
+if (typeof (window as any).process === 'undefined') {
+    (window as any).process = { env: {} };
+}
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import WidgetSandbox from './pages/user/WidgetSandbox';
 
-// Khai báo kiểu dữ liệu cho window để TypeScript không bắt bẻ
+// Định nghĩa kiểu dữ liệu window mở rộng cho TypeScript đỡ báo đỏ
 declare global {
   interface Window {
-    initCentralChatbot?: (config: { site_id: string; api_url?: string }) => void;
+    initCentralChatbot: (config: { site_id: string; site_name?: string }) => void;
   }
 }
 
-// Định nghĩa hàm khởi tạo toàn cục
+// 2. Định nghĩa hàm khởi tạo toàn cục đúng theo ảnh cấu trúc của bạn
 window.initCentralChatbot = (config) => {
-  // 1. Tìm và xóa root cũ nếu có (tránh trùng lặp khi dán lại console)
-  const oldRoot = document.getElementById('chatbot-widget-root');
-  if (oldRoot) oldRoot.remove();
+    console.log("🛠️ Đang khởi tạo giao diện cho site:", config.site_id);
 
-  // 2. KHAI BÁO BIẾN ĐÂY: Tạo thẻ div mới tinh dưới cùng body
-  const widgetContainer = document.createElement('div');
-  widgetContainer.id = 'chatbot-widget-root';
-  document.body.appendChild(widgetContainer);
+    // Lưu site_id vào sessionStorage để Component WidgetSandbox của bạn lấy ra sử dụng để gọi API
+    sessionStorage.setItem('current_site_id', config.site_id);
+    if (config.site_name) {
+        sessionStorage.setItem('current_site_name', config.site_name);
+    }
 
-  // 3. Khởi tạo React Root đập thẳng vào container vừa khai báo ở trên
-  const root = ReactDOM.createRoot(widgetContainer);
+    // 3. Tự động tìm hoặc tạo thẻ bọc ngoài cùng (Container) nếu trang web chưa có
+    let rootContainer = document.getElementById('my-custom-chatbot-root');
+    if (!rootContainer) {
+        rootContainer = document.createElement('div');
+        rootContainer.id = 'my-custom-chatbot-root';
+        rootContainer.style.position = 'fixed';
+        rootContainer.style.bottom = '20px';
+        rootContainer.style.right = '20px';
+        rootContainer.style.zIndex = '999999';
+        document.body.appendChild(rootContainer);
+    }
 
-  // 4. Ép kiểu tạm thời cho WidgetSandbox để render mượt mà
-  const DynamicWidget = WidgetSandbox as any;
+    // 4. Tạo Shadow DOM bảo vệ (tránh bị CSS của trang web thật làm đè/vỡ giao diện chatbot)
+    const shadow = rootContainer.shadowRoot || rootContainer.attachShadow({ mode: 'open' });
+    
+    // 5. Tạo một div bên trong Shadow DOM làm đích để React render vào
+    let targetNode = shadow.getElementById('chatbot-widget-inner');
+    if (!targetNode) {
+        targetNode = document.createElement('div');
+        targetNode.id = 'chatbot-widget-inner';
+        shadow.appendChild(targetNode);
+    }
 
-  root.render(
-    <React.StrictMode>
-      <DynamicWidget 
-        siteId={config.site_id} 
-        apiUrl={config.api_url || 'http://localhost:3000'} 
-      />
-    </React.StrictMode>
-  );
+    // 6. Tiến hành render React Component WidgetSandbox vào đích
+    const root = ReactDOM.createRoot(targetNode);
+    root.render(<WidgetSandbox />);
 };

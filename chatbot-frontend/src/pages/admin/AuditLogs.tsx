@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { AdminAuditLog } from '../../types/chat.types';
 // Thay vì import API from './api' hoặc '../../api'
-import API from '../../api/api';
+
 export default function AuditLogs() {
     const [logs, setLogs] = useState<AdminAuditLog[]>([]);
     const [loading, setLoading] = useState<boolean>(true);

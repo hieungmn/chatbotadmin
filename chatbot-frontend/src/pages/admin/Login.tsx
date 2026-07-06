@@ -17,14 +17,10 @@ export default function Login() {
             });
 
             if (response.data.success) {
-                // 1. Lưu token chuẩn của bạn
                 localStorage.setItem('admin_token', response.data.token);
+                localStorage.setItem('user_role', response.data.role);
+                localStorage.setItem('username', response.data.username);
 
-                // 2. Lưu quyền và username động do Backend vừa trả về ở trên
-                localStorage.setItem('user_role', response.data.role);       // Nhận 'admin' hoặc 'staff'
-                localStorage.setItem('username', response.data.username);   // Nhận tên user
-
-                // 3. Chuyển hướng vào trang upload
                 window.location.href = '/admin/upload';
             } else {
                 setError(response.data.message || 'Đăng nhập thất bại.');
@@ -35,26 +31,133 @@ export default function Login() {
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'sans-serif' }}>
-            <form onSubmit={handleLogin} style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', width: '100%', maxWidth: '360px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#0f172a' }}>🤖 BOT ADMIN LOGIN</h2>
-
-                {error && <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '4px', marginBottom: '15px', fontSize: '14px' }}>❌ {error}</div>}
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 'bold' }}>Tài khoản (Username):</label>
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+        <div style={styles.wrapper}>
+            <div style={styles.card}>
+                
+                <div style={styles.header}>
+                    <div style={styles.logo}>管理システム</div>
+                    <div style={styles.subtitle}>Admin Login Portal</div>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 'bold' }}>Mật khẩu (Password):</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                {error && (
+                    <div style={styles.errorBox}>
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleLogin} style={styles.form}>
+                    <label style={styles.label}>ユーザー名</label>
+                    <input
+                        style={styles.input}
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Enter username"
+                        required
+                    />
+
+                    <label style={styles.label}>パスワード</label>
+                    <input
+                        style={styles.input}
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password"
+                        required
+                    />
+
+                    <button type="submit" style={styles.button}>
+                        ログイン
+                    </button>
+                </form>
+
+                <div style={styles.footer}>
+                    © Internal System • Company Admin Panel
                 </div>
 
-                <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    Đăng nhập hệ thống
-                </button>
-            </form>
+            </div>
         </div>
     );
 }
+
+const styles: any = {
+    wrapper: {
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f5f6f7',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif'
+    },
+
+    card: {
+        width: '380px',
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        padding: '32px',
+    },
+
+    header: {
+        textAlign: 'center',
+        marginBottom: '24px'
+    },
+
+    logo: {
+        fontSize: '18px',
+        fontWeight: 600,
+        color: '#111827',
+        letterSpacing: '1px'
+    },
+
+    subtitle: {
+        fontSize: '12px',
+        color: '#6b7280',
+        marginTop: '4px'
+    },
+
+    form: {
+        display: 'flex',
+        flexDirection: 'column'
+    },
+
+    label: {
+        fontSize: '12px',
+        color: '#374151',
+        marginBottom: '6px',
+        marginTop: '12px'
+    },
+
+    input: {
+        padding: '10px',
+        border: '1px solid #d1d5db',
+        fontSize: '14px',
+        outline: 'none',
+        backgroundColor: '#fff'
+    },
+
+    button: {
+        marginTop: '20px',
+        padding: '10px',
+        backgroundColor: '#111827',
+        color: '#ffffff',
+        border: 'none',
+        fontSize: '14px',
+        cursor: 'pointer'
+    },
+
+    errorBox: {
+        backgroundColor: '#fef2f2',
+        color: '#b91c1c',
+        padding: '10px',
+        fontSize: '12px',
+        marginBottom: '10px',
+        border: '1px solid #fecaca'
+    },
+
+    footer: {
+        marginTop: '20px',
+        fontSize: '10px',
+        color: '#9ca3af',
+        textAlign: 'center'
+    }
+};

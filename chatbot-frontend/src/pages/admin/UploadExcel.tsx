@@ -160,172 +160,236 @@ export default function UploadExcel() {
         }
     };
 
-    return (
-        <div style={{ padding: '10px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-            
-            {/* THANH ĐIỀU HƯỚNG TABS */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
-                <button
-                    onClick={() => { setActiveTab('faq'); setMessage(''); }}
-                    style={{
-                        padding: '10px 24px',
-                        backgroundColor: activeTab === 'faq' ? '#3b82f6' : 'transparent',
-                        color: activeTab === 'faq' ? '#fff' : '#64748b',
-                        border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '14px', cursor: 'pointer'
-                    }}
-                >
-                    🗂️ Tab 1: FAQ Database Sync (Excel)
-                </button>
-                <button
-                    onClick={() => { setActiveTab('ai_knowledge'); setMessage(''); }}
-                    style={{
-                        padding: '10px 24px',
-                        backgroundColor: activeTab === 'ai_knowledge' ? '#8b5cf6' : 'transparent',
-                        color: activeTab === 'ai_knowledge' ? '#fff' : '#64748b',
-                        border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '14px', cursor: 'pointer'
-                    }}
-                >
-                    🤖 Tab 2: AI Knowledge Base (Word/RAG)
-                </button>
-            </div>
+   return (
+  <div style={{
+    padding: 10,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  }}>
 
-            {/* PHẦN 1: TARGET SCOPE ALLOCATION */}
-            <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>
-                    1. Target Scope Allocation:
-                </label>
-                <select
-                    value={siteId}
-                    onChange={(e) => setSiteId(e.target.value)}
-                    style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', maxWidth: '480px', fontSize: '14px', color: '#334155', backgroundColor: '#fff', outline: 'none' }}
-                >
-                    <option value="auto">☀️ Auto-distribute All Channels (Unified Master File)</option>
-                    <option value="s-wing">S-Wing Học Đường</option>
-                    <option value="c-wing">C-Wing Community</option>
-                    <option value="cansuke">Cansuke Support</option>
-                    <option value="account-business">Account Business</option>
-                </select>
+    {/* TABS */}
+    <div style={{
+      display: 'flex',
+      gap: 8,
+      marginBottom: 20,
+      borderBottom: '2px solid #e2e8e0',
+      paddingBottom: 10
+    }}>
+      <button
+        onClick={() => { setActiveTab('faq'); setMessage(''); }}
+        style={{
+          padding: '10px 20px',
+          background: activeTab === 'faq' ? '#3b82f6' : 'transparent',
+          color: activeTab === 'faq' ? '#fff' : '#64748b',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer'
+        }}
+      >
+        FAQ Sync
+      </button>
 
-                {activeTab === 'faq' ? (
-                    <div
-                        onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{
-                            marginTop: '20px',
-                            border: isDragActive ? '2px dashed #3b82f6' : '1px dashed #3b82f6',
-                            backgroundColor: isDragActive ? '#eff6ff' : '#f8fafc',
-                            borderRadius: '10px', padding: '40px 20px', textAlign: 'center', cursor: 'pointer'
-                        }}
-                    >
-                        <input ref={fileInputRef} type="file" accept=".xlsx, .xls, .csv" onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])} style={{ display: 'none' }} />
-                        <div style={{ fontSize: '40px', color: '#94a3b8', marginBottom: '10px' }}>📄</div>
-                        <p style={{ margin: 0, fontSize: '14px', color: '#475569' }}>
-                            Drag and drop Master Excel (<span style={{ fontWeight: 600 }}>.xlsx</span>) or CSV file here, or <span style={{ color: '#2563eb', fontWeight: 600 }}>browse desktop</span>
-                        </p>
-                    </div>
-                ) : (
-                    <div style={{ marginTop: '20px' }}>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
-                            Chọn định dạng tài liệu thô:
-                        </label>
-                        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                            <label style={{ fontSize: '14px', color: '#334155', cursor: 'pointer' }}>
-                                <input type="radio" name="kb_type" value="word" checked={knowledgeFileType === 'word'} onChange={() => setKnowledgeFileType('word')} style={{ marginRight: '6px' }} /> 
-                                Microsoft Word (.docx)
-                            </label>
-                            <label style={{ fontSize: '14px', color: '#334155', cursor: 'pointer' }}>
-                                <input type="radio" name="kb_type" value="excel" checked={knowledgeFileType === 'excel'} onChange={() => setKnowledgeFileType('excel')} style={{ marginRight: '6px' }} /> 
-                                Sổ tay Excel thô (.xlsx)
-                            </label>
-                        </div>
+      <button
+        onClick={() => { setActiveTab('ai_knowledge'); setMessage(''); }}
+        style={{
+          padding: '10px 20px',
+          background: activeTab === 'ai_knowledge' ? '#8b5cf6' : 'transparent',
+          color: activeTab === 'ai_knowledge' ? '#fff' : '#64748b',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer'
+        }}
+      >
+        AI Knowledge
+      </button>
+    </div>
 
-                        <div
-                            onDragEnter={handleKnowledgeDrag} onDragOver={handleKnowledgeDrag} onDragLeave={handleKnowledgeDrag} onDrop={handleKnowledgeDrop}
-                            onClick={() => knowledgeFileInputRef.current?.click()}
-                            style={{
-                                border: isKnowledgeDragActive ? '2px dashed #8b5cf6' : '1px dashed #8b5cf6',
-                                backgroundColor: isKnowledgeDragActive ? '#f5f3ff' : '#f8fafc',
-                                borderRadius: '10px', padding: '40px 20px', textAlign: 'center', cursor: 'pointer'
-                            }}
-                        >
-                            <input ref={knowledgeFileInputRef} type="file" accept={knowledgeFileType === 'word' ? '.docx, .doc' : '.xlsx, .xls'} onChange={handleSelectKnowledgeFile} style={{ display: 'none' }} />
-                            <div style={{ fontSize: '40px', color: '#c084fc', marginBottom: '10px' }}>🤖</div>
-                            <p style={{ margin: 0, fontSize: '14px', color: '#475569' }}>
-                                Kéo thả file tài liệu <span style={{ fontWeight: 600, color: '#7c3aed' }}>{knowledgeFileType.toUpperCase()}</span> vào đây, hoặc <span style={{ color: '#7c3aed', fontWeight: 600 }}>chọn từ máy tính</span>
-                            </p>
-                        </div>
+    {/* SITE SELECT */}
+    <div style={{ marginBottom: 20 }}>
+      <select
+        value={siteId}
+        onChange={(e) => setSiteId(e.target.value)}
+        style={{
+          padding: 10,
+          borderRadius: 8,
+          border: '1px solid #cbd5e1',
+          width: '100%',
+          maxWidth: 480
+        }}
+      >
+        <option value="auto">Auto</option>
+        <option value="s-wing">S-Wing</option>
+        <option value="c-wing">C-Wing</option>
+        <option value="cansuke">Cansuke</option>
+        <option value="account-business">Account Business</option>
+      </select>
+    </div>
 
-                        {selectedKnowledgeFile && (
-                            <div style={{ marginTop: '16px', textAlign: 'right' }}>
-                                <button
-                                    onClick={handleUploadKnowledge} disabled={loading}
-                                    style={{ padding: '12px 24px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer' }}
-                                >
-                                    {loading ? '⏳ Đang nạp Vector...' : '⚡ Kích hoạt nạp tri thức AI RAG'}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* THÔNG BÁO ALERT */}
-            {message && (
-                <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: isError ? '#fee2e2' : '#ecfdf5', color: isError ? '#991b1b' : '#065f46', fontSize: '14px', marginBottom: '20px', fontWeight: 500 }}>
-                    {message}
-                </div>
-            )}
-
-            {/* PHẦN 2: PREVIEW BẢNG (CHỈ HIỂN THỊ KHI Ở TAB FAQ) */}
-            {activeTab === 'faq' && (
-                <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    {/* 🛠️ SỬA CHÍNH XÁC: Thay thế từ 'justifycontent' lỗi thành 'justifyContent' viết chuẩn camelCase */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
-                            👁️ Filtered Records Preview ({previewData.length} rows)
-                        </div>
-                        <button
-                            onClick={handleCommitSync} disabled={previewData.length === 0 || loading}
-                            style={{ padding: '10px 20px', backgroundColor: previewData.length === 0 ? '#94a3b8' : '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: previewData.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                        >
-                            {loading ? '⏳ Synchronizing...' : '🔄 Commit Live Sync to Server'}
-                        </button>
-                    </div>
-
-                    <div style={{ overflowX: 'auto', border: '1px solid #f1f5f9', borderRadius: '8px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>
-                                    <th style={{ padding: '12px' }}>Data ID</th>
-                                    <th style={{ padding: '12px' }}>Category</th>
-                                    <th style={{ padding: '12px' }}>Search Keywords</th>
-                                    <th style={{ padding: '12px' }}>Resolved Answer (日本語)</th>
-                                    <th style={{ padding: '12px' }}>Redirection Destination</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {previewData.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
-                                            No active data payload loaded. Import a master spreadsheet to generate previews.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    previewData.map((row, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                            <td style={{ padding: '12px', fontWeight: 600, color: '#0f172a' }}>{row.data_id}</td>
-                                            <td style={{ padding: '12px', color: '#475569' }}>{row.category}</td>
-                                            <td style={{ padding: '12px', color: '#475569' }}>{row.keywords}</td>
-                                            <td style={{ padding: '12px', color: '#0f172a', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.answer_text}</td>
-                                            <td style={{ padding: '12px', color: '#2563eb' }}>{row.redirect_url || '---'}</td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+    {/* ================= TAB 1 ================= */}
+    {activeTab === 'faq' && (
+      <>
+        {/* UPLOAD ZONE */}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          style={{
+            border: isDragActive ? '2px dashed #3b82f6' : '1px dashed #3b82f6',
+            background: isDragActive ? '#eff6ff' : '#f8fafc',
+            padding: 50,
+            borderRadius: 10,
+            textAlign: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
+            style={{ display: 'none' }}
+          />
+          📄 Click or drop Excel/CSV
         </div>
-    );
-}
+
+        {/* COMMIT BUTTON (FIXED HERE) */}
+        <div style={{ marginTop: 15, textAlign: 'right' }}>
+          <button
+            onClick={handleCommitSync}
+            disabled={previewData.length === 0 || loading}
+            style={{
+              padding: '10px 20px',
+              background: previewData.length === 0 ? '#94a3b8' : '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: previewData.length === 0 ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Syncing...' : 'Commit Sync'}
+          </button>
+        </div>
+
+        {/* TABLE */}
+        <div style={{ marginTop: 20 }}>
+          <table style={{ width: '100%', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th>Data ID</th>
+                <th>Category</th>
+                <th>Keywords</th>
+                <th>Answer</th>
+                <th>Redirect</th>
+              </tr>
+            </thead>
+            <tbody>
+              {previewData.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: 20, color: '#999' }}>
+                    No data
+                  </td>
+                </tr>
+              ) : (
+                previewData.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.data_id}</td>
+                    <td>{r.category}</td>
+                    <td>{r.keywords}</td>
+                    <td>{r.answer_text}</td>
+                    <td>{r.redirect_url || '-'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+
+    {/* ================= TAB 2 ================= */}
+    {activeTab === 'ai_knowledge' && (
+      <div style={{ marginTop: 20 }}>
+
+        <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
+          <label>
+            <input
+              type="radio"
+              checked={knowledgeFileType === 'word'}
+              onChange={() => setKnowledgeFileType('word')}
+            />
+            Word
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              checked={knowledgeFileType === 'excel'}
+              onChange={() => setKnowledgeFileType('excel')}
+            />
+            Excel
+          </label>
+        </div>
+
+        <input
+          ref={knowledgeFileInputRef}
+          type="file"
+          accept={knowledgeFileType === 'word' ? '.docx,.doc' : '.xlsx,.xls'}
+          onChange={handleSelectKnowledgeFile}
+          style={{ display: 'none' }}
+        />
+
+        <div
+          onClick={() => knowledgeFileInputRef.current?.click()}
+          onDragEnter={handleKnowledgeDrag}
+          onDragOver={handleKnowledgeDrag}
+          onDragLeave={handleKnowledgeDrag}
+          onDrop={handleKnowledgeDrop}
+          style={{
+            border: isKnowledgeDragActive ? '2px dashed #8b5cf6' : '1px dashed #8b5cf6',
+            background: isKnowledgeDragActive ? '#f5f3ff' : '#f8fafc',
+            padding: 50,
+            borderRadius: 10,
+            textAlign: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          📦 Click or drop knowledge file
+        </div>
+
+        {selectedKnowledgeFile && (
+          <div style={{ marginTop: 15 }}>
+            <button
+              onClick={handleUploadKnowledge}
+              disabled={loading}
+              style={{
+                padding: '10px 20px',
+                background: '#8b5cf6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer'
+              }}
+            >
+              {loading ? 'Uploading...' : 'Upload Knowledge'}
+            </button>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* MESSAGE */}
+    {message && (
+      <div style={{
+        marginTop: 20,
+        padding: 12,
+        borderRadius: 8,
+        background: isError ? '#fee2e2' : '#ecfdf5',
+        color: isError ? '#991b1b' : '#065f46'
+      }}>
+        {message}
+      </div>
+    )}
+
+  </div>
+)};
