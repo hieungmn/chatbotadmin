@@ -87,7 +87,7 @@ CREATE TABLE public.users (
 -- ==========================================
 CREATE TABLE public.user_site_permissions (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES public.admin_users(id) ON DELETE CASCADE,
     site_id VARCHAR(50) NOT NULL REFERENCES public.sites(site_id) ON DELETE CASCADE,
     granted_by INT REFERENCES public.admin_users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
