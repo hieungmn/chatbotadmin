@@ -4,7 +4,7 @@ import { getEmbedding, generateAnswer } from "../../utils/ai";
 
 /**
  * =========================
- * CHAT RAG CONTROLLER (FIXED SAFE VERSION)
+ * CHAT RAG CONTROLLER (TỐI ƯU CẤU TRÚC EXCEL MỚI)
  * =========================
  */
 export const handleChatQuery = async (req: Request, res: Response): Promise<any> => {
@@ -69,7 +69,7 @@ export const handleChatQuery = async (req: Request, res: Response): Promise<any>
             return res.json({
                 success: true,
                 answer: fallbackMsg,
-                faq_id: -1, // Đưa về -1 để frontend hiển thị nút feedback cho câu quá ngắn này
+                faq_id: -1, 
                 is_fallback: true,
                 session_id: finalSessionId
             });
@@ -77,7 +77,7 @@ export const handleChatQuery = async (req: Request, res: Response): Promise<any>
 
         /**
          * =========================
-         * 1. FAQ SEARCH (KEEP ORIGINAL)
+         * 1. FAQ SEARCH (BẢNG CŨ - GIỮ NGUYÊN)
          * =========================
          */
         const faqQuery = `
@@ -109,66 +109,69 @@ export const handleChatQuery = async (req: Request, res: Response): Promise<any>
 
         /**
          * =========================
-         * 2. RAG (FIXED - SAFE VECTOR HANDLING)
+         * 2. RAG (SỬA ĐỔI: THÊM NGƯỠNG TƯƠNG ĐỒNG VECTOR)
          * =========================
          */
         let contextText = "";
 
         try {
-            // 1. EMBEDDING
+            // 1. EMBEDDING CÂU HỎI
             const embedding = await getEmbedding(cleanMsg);
 
-            // 2. SAFETY CHECK (FIX VECTOR CRASH)
+            // 2. KIỂM TRA MẢNG VECTOR AN TOÀN
             if (!Array.isArray(embedding) || embedding.length === 0) {
                 throw new Error("Invalid embedding");
             }
 
             const vectorStr = `[${embedding.join(",")}]`;
 
-            // 3. SAFE QUERY (cast vector)
+            // 3. QUÉT VECTOR KÈM NGƯỠNG TƯƠNG ĐỒNG > 0.25 (Đảm bảo lọc bỏ rác hoàn toàn)
             const chunkRes = await pool.query(`
-                SELECT content_text
+                SELECT content_text, (1 - (embedding <=> $2::vector)) AS similarity
                 FROM public.site_knowledge_chunks
                 WHERE site_id = $1
-                ORDER BY embedding <=> $2::vector
-                LIMIT 3;
+                  AND (1 - (embedding <=> $2::vector)) > 0.25
+                ORDER BY similarity DESC
+                LIMIT 4;
             `, [cleanSiteId, vectorStr]);
 
             if (chunkRes.rows.length > 0) {
                 contextText = chunkRes.rows
                     .map(r => r.content_text)
-                    .join("\n");
+                    .join("\n\n---\n\n");
             }
 
         } catch (err) {
             console.error("RAG ERROR (SAFE FALLBACK):", err);
 
-            // fallback: still allow AI without vector
+            // Fallback khi lỗi sinh vector: Chỉ bốc các chunk mới nhất có cấu trúc
             const chunkRes = await pool.query(`
                 SELECT content_text
                 FROM public.site_knowledge_chunks
                 WHERE site_id = $1
+                ORDER BY created_at DESC
                 LIMIT 3;
             `, [cleanSiteId]);
 
             contextText = chunkRes.rows
                 .map(r => r.content_text)
-                .join("\n");
+                .join("\n\n---\n\n");
         }
 
         /**
          * =========================
-         * 3. AI GENERATION (FORCED RUN)
+         * 3. AI GENERATION (GỌI ĐỒNG BỘ)
          * =========================
          */
-        // 🎯 ĐÃ SỬA: Truyền đủ 3 đối số: cleanMsg, contextText, và contactUrl
         const aiAnswer = await generateAnswer(cleanMsg, contextText, contactUrl);
-        const isFallback = (aiAnswer === contactUrl);
+        
+        // Nhận diện nếu AI trả về link liên hệ hệ thống (Tức là không biết/câu hỏi phá hoại)
+        const isFallback = (aiAnswer === contactUrl || aiAnswer.includes(contactUrl));
 
         return res.json({
             success: true,
             answer: aiAnswer,
-            faq_id: isFallback ? -1 : 999, // Đánh dấu -1 nếu thất bại, 999 nếu AI trả lời từ RAG thành công
+            faq_id: isFallback ? -1 : 999, // Trả về -1 để Front-end nhận diện hiển thị khung bọc nút bấm ✉ お問い合わせ窓口
             is_fallback: isFallback,
             session_id: finalSessionId,
             source: "ai"
@@ -185,7 +188,7 @@ export const handleChatQuery = async (req: Request, res: Response): Promise<any>
 
 /**
  * =========================
- * SUGGESTIONS (KEEP ORIGINAL)
+ * SUGGESTIONS (GIỮ NGUYÊN HIỂN THỊ CHIP THEO CATEGORY)
  * =========================
  */
 export const getInitialSuggestions = async (req: Request, res: Response) => {
@@ -218,7 +221,7 @@ export const getInitialSuggestions = async (req: Request, res: Response) => {
 
 /**
  * =========================
- * FEEDBACK (KEEP ORIGINAL - FIXED TYPE FOR AI FALLBACK)
+ * FEEDBACK (GIỮ NGUYÊN)
  * =========================
  */
 export const submitFeedback = async (req: Request, res: Response): Promise<any> => {
@@ -228,8 +231,6 @@ export const submitFeedback = async (req: Request, res: Response): Promise<any> 
         const site = site_id ? String(site_id).trim().toLowerCase() : "s-wing";
         const finalScore = score === 1 ? 1 : -1;
 
-        // Tiến hành insert thẳng vào DB
-        // Do faq_id gửi lên luôn là một ID thật hợp lệ (Kể cả luồng FAQ cũ hay mặt nạ AI), DB sẽ cho phép lưu 100%!
         await pool.query(`
             INSERT INTO public.faq_feedback_logs (site_id, session_id, faq_id, search_log_id, score, created_at)
             VALUES ($1, $2, $3, $4, $5, NOW());

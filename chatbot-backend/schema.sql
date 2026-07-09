@@ -116,7 +116,8 @@ CREATE TABLE public.faq_master (
     data_id VARCHAR(50) NOT NULL,     
     site_id VARCHAR(50) NOT NULL REFERENCES public.sites(site_id) ON DELETE CASCADE,
     category VARCHAR(100) NOT NULL DEFAULT 'Chung',
-    keywords TEXT NOT NULL DEFAULT '', 
+    keywords TEXT NOT NULL DEFAULT '',
+    question TEXT NOT NULL, 
     answer_text TEXT NOT NULL,
     redirect_url TEXT DEFAULT NULL,   
     is_draft BOOLEAN NOT NULL DEFAULT TRUE, 
@@ -176,7 +177,17 @@ CREATE TABLE public.chat_sessions (
     last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_site ON public.chat_sessions(site_id);
+--10.1 bang lich su chat cua nguoi dung va AI
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id SERIAL PRIMARY KEY,
+    session_id VARCHAR(100) NOT NULL REFERENCES public.chat_sessions(session_id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL, -- 'user' (Khách) hoặc 'assistant' (AI)
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
+-- Tạo Index để bốc lịch sử chat siêu tốc theo session_id
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON public.chat_messages(session_id);
 -- ==========================================
 -- 11. BẢNG LOG LỊCH SỬ CHAT VÀ PHÂN TÍCH (SEARCH_LOGS)
 -- ==========================================

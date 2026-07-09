@@ -66,16 +66,14 @@ export interface UserActionLog {
 
 // Bảng: public.faq_master
 export interface ExcelFaqItem {
-    id?: number;
     data_id: string;
     site_id: string;
-    category?: string;
-    keywords?: string;
+    category: string;
+    question?: string;   // 🎯 THÊM DÒNG NÀY VÀO ĐÂY
+    keywords: string;
     answer_text: string;
-    redirect_url?: string | null;
-    is_draft?: boolean;
-    created_at?: string;
-    updated_at?: string;
+    redirect_url: string;
+    is_draft: boolean;
 }
 
 // ==========================================

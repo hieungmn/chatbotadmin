@@ -13,17 +13,19 @@ const safeJson = async (res: Response): Promise<any> => {
 
 /**
  * ==========================================
- * EMBEDDING (Biến đổi văn bản thành Vector)
+ * EMBEDDING
  * ==========================================
  */
 export const getEmbedding = async (text: string): Promise<number[]> => {
     try {
-        const res = await fetch(`${OLLAMA_URL}/api/embeddings`, {
+        const res = await fetch(`${OLLAMA_URL}/api/embed`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify({
                 model: "nomic-embed-text",
-                prompt: text,
+                input: text,
             }),
         });
 
@@ -34,7 +36,7 @@ export const getEmbedding = async (text: string): Promise<number[]> => {
             throw new Error("Embedding failed");
         }
 
-        return data?.embedding || [];
+        return data?.embeddings?.[0] ?? [];
     } catch (err) {
         console.error("❌ Embedding crash:", err);
         throw err;
@@ -43,7 +45,7 @@ export const getEmbedding = async (text: string): Promise<number[]> => {
 
 /**
  * ==========================================
- * CHAT GENERATION ( gemma3:4b Local RAG)
+ * CHAT GENERATION
  * ==========================================
  */
 export const generateAnswer = async (
@@ -52,49 +54,99 @@ export const generateAnswer = async (
     contactUrl: string
 ): Promise<string> => {
     try {
-        // 🔓 BỎ ĐOẠN CHECK CŨ: Không chặn return contactUrl ở đây nữa!
-        // if (!context || context.trim() === "") { return contactUrl; }
-
-        // Viết lại Prompt mềm dẻo hơn
         const prompt = `
-You are a helpful customer support AI assistant.
+You are a helpful Japanese customer support assistant.
 
-[CÁCH TRẢ LỜI]:
-1. Nếu có "NGỮ CẢNH" phía dưới, hãy ưu tiên dùng nó để trả lời thật chính xác.
-2. Nếu "NGỮ CẢNH" trống hoặc không liên quan, không được tự bịa mà hãy trả lời lịch sự không biết.
-3. Chỉ khi nào câu hỏi hoàn toàn vô nghĩa, phá hoại hoặc bạn tuyệt đối không thể trả lời được, bạn mới trả về duy nhất chuỗi này: [${contactUrl}]
+Your task is to answer the user's QUESTION using the provided CONTEXT.
 
-================
-NGỮ CẢNH:
-${context || "Không có tài liệu cụ thể cho câu hỏi này."}
+Rules:
+1. Always answer in Japanese.
+2. Use ONLY the information in CONTEXT.
+3. If the answer can be inferred from multiple pieces of context, combine them naturally.
+4. Never make up information.
+5. If the answer cannot be found in the CONTEXT, output exactly:
 
-================
-CÂU HỎI:
+CON_TACT_URL
+
+Do NOT explain.
+Do NOT apologize.
+Do NOT include any URL.
+Do NOT write "CON_TACT_URL:".
+Output ONLY the single word CON_TACT_URL.
+
+=========================
+CONTEXT
+${context?.trim() || "No related information."}
+
+=========================
+QUESTION
 ${question}
+
+=========================
+ANSWER
 `;
 
         const res = await fetch(`${OLLAMA_URL}/api/generate`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify({
-                model: " gemma3:4b",
+                model: "gemma3:4b",
+                system: `
+You are a Japanese customer support AI.
+
+Always answer in Japanese.
+
+Use only the provided context.
+
+Never invent information.
+
+If the answer cannot be found,
+reply with exactly:
+
+CON_TACT_URL
+
+Nothing else.
+`,
                 prompt,
                 stream: false,
                 options: {
-                    temperature: 0, // 🎯 TĂNG LÊN 0.7: Cho phép AI tư duy, sáng tạo và tự sinh câu trả lời tự do
-                    top_p: 0.9,
+                    temperature: 0.2,
+                    top_p: 0.95,
+                    num_ctx: 8192,
                     num_predict: 512,
+                    repeat_penalty: 1.1,
                 },
             }),
         });
 
         const data = await safeJson(res);
-        if (!res.ok) throw new Error("Chat failed");
 
-        let aiResponse = data?.response?.trim() || contactUrl;
+        if (!res.ok) {
+            console.error("❌ Chat error:", data);
+            throw new Error("Chat failed");
+        }
 
-        if (aiResponse.startsWith('[') && aiResponse.endsWith(']')) {
+        let aiResponse = (data?.response || "").trim();
+
+        // Remove markdown brackets
+        if (
+            aiResponse.startsWith("[") &&
+            aiResponse.endsWith("]")
+        ) {
             aiResponse = aiResponse.slice(1, -1).trim();
+        }
+
+        // Nếu model có chứa CON_TACT_URL ở bất kỳ đâu
+        // thì chỉ trả về link cho frontend
+        if (aiResponse.toUpperCase().includes("CON_TACT_URL")) {
+            return contactUrl;
+        }
+
+        // Không có nội dung
+        if (!aiResponse) {
+            return contactUrl;
         }
 
         return aiResponse;

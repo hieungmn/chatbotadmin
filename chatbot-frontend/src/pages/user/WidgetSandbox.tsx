@@ -102,53 +102,77 @@ export default function WidgetSandbox() {
 
         setIsTyping(true);
 
-        try {
+try {
             const http = (axios as any).default || axios;
             const response = await http.post('http://localhost:3000/api/v1/chat/query', {
                 site_id: siteId,
                 message: text,
-                session_id: sessionId // Gửi session_id hiện tại lên (nếu có)
+                session_id: sessionId 
             });
 
             await new Promise(resolve => setTimeout(resolve, 600));
 
-            if (response.data.success) {
-                // Lưu lại session_id trả về từ backend
+            // 🎯 KHAI BÁO BIẾN CHUẨN BỊ TRẢ LỜI NGOÀI KHỐI IF ĐỂ TRÁNH SỰ CỐ ĐƠ CHAT
+            let botReply = '';
+            let triggerFeedback = false;
+            let currentFaqId = -1;
+
+            // Trường hợp 1: Backend gọi thành công VÀ có câu trả lời từ DB/AI
+            if (response.data && response.data.success && response.data.answer && response.data.answer.trim() !== "") {
+                
                 if (response.data.session_id) {
                     setSessionId(response.data.session_id);
                 }
+                
+                botReply = response.data.answer;
+                currentFaqId = response.data.faq_id !== undefined ? response.data.faq_id : -1;
 
-                let botReply = response.data.answer;
-                let triggerFeedback = false;
-
-                // 🎯 PHÁT HIỆN LUỒNG AI KHÔNG ĐÁP ỨNG ĐƯỢC (TỰ ĐỘNG BỌC LINK VÀ KIẾM SOÁT THẺ HTML)
-                if (response.data.is_fallback || botReply === CONTACT_URLS[siteId] || !botReply || botReply.trim() === "") {
-                    const fallbackUrl = CONTACT_URLS[siteId] || 'https://anabuki-cs.jp/service/';
-                    botReply = `申し訳ありません。ご質問に対する回答が見つかりませんでした。<br>お手数ですが、以下のリンクよりお問い合わせください。<br><a href="${fallbackUrl}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">✉ お問い合わせ窓口</a>`;
-                    
-                    // Ép bật tính năng Feedback Like/Dislike kể cả khi AI trả về link liên hệ
-                    triggerFeedback = true;
-                } else {
-                    // Nếu tìm thấy kết quả từ FAQ master hoặc AI trả lời thành công
-                    if (response.data.redirect_url) {
-                        botReply += `<br><a href="${response.data.redirect_url}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">Chi tiết</a>`;
-                    }
-                    triggerFeedback = true;
+                // Nếu có đường dẫn chi tiết từ FAQ Excel thì bọc thêm link
+                if (response.data.redirect_url) {
+                    botReply += `<br><a href="${response.data.redirect_url}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">Chi tiết</a>`;
                 }
 
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        id: 'bot-' + Date.now(),
-                        sender: 'bot',
-                        text: botReply,
-                        faq_id: response.data.faq_id !== undefined ? response.data.faq_id : -1,
-                        showFeedback: triggerFeedback
-                    }
-                ]);
+                // Phát hiện nếu câu trả lời đó chính là link fallback do AI sinh ra hoặc backend đánh dấu là fallback
+                if (response.data.is_fallback || botReply === CONTACT_URLS[siteId]) {
+                    const fallbackUrl = CONTACT_URLS[siteId] || 'https://anabuki-cs.jp/service/';
+                    botReply = `申し訳ありません。ご質問に対する回答が見つかりませんでした。<br>お手数ですが、以下のリンクよりお問い合わせください。<br><a href="${fallbackUrl}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">✉ お問い合わせ窓口</a>`;
+                }
+                
+                triggerFeedback = true;
+
+            } else {
+                // 🎯 TRƯỜNG HỢP 2: DATABASE TRỐNG HOẶC APIS KHÔNG TRẢ VỀ KẾT QUẢ (Xử lý Fallback ngay lập tức)
+                const fallbackUrl = CONTACT_URLS[siteId] || 'https://anabuki-cs.jp/service/';
+                botReply = `申し訳ありません。ご質問に対する回答が見つかりませんでした。<br>お手数ですが、以下のリンクよりお問い合わせください。<br><a href="${fallbackUrl}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">✉ お問い合わせ窓口</a>`;
+                triggerFeedback = true;
             }
+
+            // 🎯 ĐẢM BẢO LUÔN ĐẨY TIN NHẮN LÊN MÀN HÌNH CHAT CHỨ KHÔNG BỊ "IM LẶNG"
+            setMessages(prev => [
+                ...prev,
+                {
+                    id: 'bot-' + Date.now(),
+                    sender: 'bot',
+                    text: botReply,
+                    faq_id: currentFaqId,
+                    showFeedback: triggerFeedback
+                }
+            ]);
+
         } catch (error) {
             console.error(error);
+            // 🎯 TRƯỜNG HỢP 3: LỖI KẾT NỐI MẠNG HOẶC CRASH SERVER BACKEND
+            const fallbackUrl = CONTACT_URLS[siteId] || 'https://anabuki-cs.jp/service/';
+            setMessages(prev => [
+                ...prev,
+                {
+                    id: 'bot-error-' + Date.now(),
+                    sender: 'bot',
+                    text: `申し訳ありません。ただいまシステムに接続しづらくなっております。<br>お手数ですが、以下のリンクよりお問い合わせください。<br><a href="${fallbackUrl}" target="_blank" style="display: inline-block; margin-top: 8px; color: ${themeColor}; font-weight: 600; text-decoration: underline;">✉ お問い合わせ窓口</a>`,
+                    faq_id: -1,
+                    showFeedback: false
+                }
+            ]);
         } finally {
             setIsTyping(false);
         }
