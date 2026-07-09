@@ -101,8 +101,8 @@ CREATE INDEX IF NOT EXISTS idx_usp_site ON public.user_site_permissions(site_id)
 -- ==========================================
 CREATE TABLE public.user_action_logs (
     id BIGSERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    action_type VARCHAR(50) NOT NULL, 
+    user_id INT NOT NULL REFERENCES public.admin_users(id) ON DELETE CASCADE,
+    action_type VARCHAR(50) NOT NULL,
     details TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -136,11 +136,11 @@ CREATE TABLE public.site_knowledge_files (
     id SERIAL PRIMARY KEY,
     site_id VARCHAR(50) NOT NULL REFERENCES public.sites(site_id) ON DELETE CASCADE,
     file_name VARCHAR(255) NOT NULL,
-    file_type VARCHAR(50) NOT NULL,                -- 'excel', 'word', 'image'
-    file_path TEXT NOT NULL,                        
-    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
-    uploaded_by INT REFERENCES public.users(id) ON DELETE SET NULL,
-    error_message TEXT,                             
+    file_type VARCHAR(50) NOT NULL,
+    file_path TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    uploaded_by INT REFERENCES public.admin_users(id) ON DELETE SET NULL,
+    error_message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
